@@ -74,8 +74,8 @@ let hoveredRoom: THREE.Group | null = null
 let selectedRoom: THREE.Group | null = null
 
 // Animation variables
-let targetHoverScale = 1
-let currentHoverScale = 1
+// let targetHoverScale = 1  // Temporairement commenté
+// let currentHoverScale = 1  // Temporairement commenté
 const hoverAnimationSpeed = 0.15 // Increased speed for more responsiveness
 let roomAnimations: Map<string, { targetScale: number, currentScale: number }> = new Map()
 
@@ -318,58 +318,57 @@ function handleClick(event: MouseEvent) {
 
   raycaster.setFromCamera(mouse, camera)
   
-  // Get all objects in the scene that can be clicked
-  const allClickableObjects: THREE.Object3D[] = []
+  // Obtenir TOUS les objets de la scène pour le raycasting
+  const allObjects: THREE.Object3D[] = []
   scene.traverse((child) => {
-    if (child.userData && child.userData.roomId) {
-      allClickableObjects.push(child)
+    if (child instanceof THREE.Mesh) {
+      allObjects.push(child)
     }
   })
   
-  const intersects = raycaster.intersectObjects(allClickableObjects, true)
-
-  // Reset previous selection
-  if (selectedRoom) {
-    selectedRoom.children.forEach(child => {
-      if (child instanceof THREE.Mesh && child.material && !child.name?.includes('clickarea')) {
-        const material = child.material as THREE.MeshLambertMaterial
-        if (child.name?.includes('wall')) {
-          material.opacity = 0.7 // Reset wall opacity
-        }
-        material.emissive.setHex(0x000000) // Reset glow
-      }
-    })
-    selectedRoom = null
-  }
+  const intersects = raycaster.intersectObjects(allObjects, false)
+  
+  let roomFound = false
 
   if (intersects.length > 0) {
-    // Find the first intersected object with room data
+    // Chercher dans les intersections s'il y a une chambre
     for (const intersect of intersects) {
-      if (intersect.object.userData && intersect.object.userData.roomId) {
-        const roomData = intersect.object.userData.roomData
-        const roomId = intersect.object.userData.roomId
-        
-        if (roomMeshes.has(roomId)) {
-          selectedRoom = roomMeshes.get(roomId)!
+      // Remonter dans la hiérarchie pour trouver un objet avec roomId
+      let current = intersect.object
+      while (current) {
+        if (current.userData && current.userData.roomId) {
+          const roomId = current.userData.roomId
           
-          // Apply selection effect
-          selectedRoom.children.forEach(child => {
-            if (child instanceof THREE.Mesh && child.material && !child.name?.includes('clickarea')) {
-              const material = child.material as THREE.MeshLambertMaterial
-              if (child.name?.includes('wall')) {
-                material.opacity = 0.9 // Increase wall opacity for selected room
-              }
-              material.emissive.setHex(0x333333) // Add selection glow
-            }
-          })
+          // Créer les données de la chambre
+          const roomNumber = roomId.replace('room-', '')
+          const roomTypes = ['standard', 'deluxe', 'suite'] as const
+          const roomData = {
+            id: roomId,
+            number: roomNumber,
+            status: 'available' as const,
+            type: roomTypes[Math.floor(Math.random() * 3)],
+            price: 100 + parseInt(roomNumber) * 10,
+            capacity: 2,
+            amenities: ['wifi', 'tv', 'minibar', 'climatisation', 'room service']
+          }
           
-          console.log('Room selected:', roomData)
           emit('selectRoom', roomData)
+          roomFound = true
           break
         }
+        if (current.parent) {
+          current = current.parent
+        } else {
+          break
+        }
+        if (current === scene) break
       }
+      if (roomFound) break
     }
-  } else {
+  }
+  
+  // Si aucune chambre trouvée, fermer le panneau
+  if (!roomFound) {
     emit('selectRoom', null)
   }
 }
@@ -409,7 +408,7 @@ function handleMouseMove(event: MouseEvent) {
 
   // Reset target scale when not hovering
   if (!hoveredRoom) {
-    targetHoverScale = 1
+    // targetHoverScale = 1  // Temporairement commenté
   }
 
   // Set default cursor

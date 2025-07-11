@@ -7,13 +7,19 @@ declare module '*.vue' {
 }
 
 // Explicit module declarations for our components
-declare module './components/FloorMap3D.vue' {
+declare module './components/HotelFloorPlan.vue' {
   import type { DefineComponent } from 'vue'
   const component: DefineComponent<{}, {}, any>
   export default component
 }
 
-declare module './components/RoomDetailsNew.vue' {
+declare module './components/RoomDetails.vue' {
+  import type { DefineComponent } from 'vue'
+  const component: DefineComponent<{}, {}, any>
+  export default component
+}
+
+declare module './components/Sidebar.vue' {
   import type { DefineComponent } from 'vue'
   const component: DefineComponent<{}, {}, any>
   export default component

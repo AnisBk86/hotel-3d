@@ -68,9 +68,9 @@
     </div>
 
     <!-- Main Content -->
-    <main class="flex-1 flex">
+    <main class="flex-1 flex relative">
       <!-- 3D Floor View -->
-      <div class="flex-1 bg-gray-100 relative overflow-hidden">
+      <div class="w-full bg-gray-100 relative overflow-hidden">
         <HotelFloorPlan 
           :selectedRoom="selectedRoom"
           @selectRoom="handleRoomSelection"
@@ -79,6 +79,14 @@
         
         <!-- Room Selection Buttons -->
         <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-3">
+          <!-- Test button -->
+          <button 
+            @click="testRoomSelection"
+            class="px-6 py-3 rounded-lg text-white font-medium text-lg shadow-lg bg-purple-500 hover:bg-purple-600 transition-all transform hover:scale-105"
+          >
+            TEST PANEL
+          </button>
+          
           <button 
             v-for="room in quickSelectRooms" 
             :key="room.id"
@@ -91,16 +99,18 @@
         </div>
       </div>
 
-      <!-- Room Details Panel -->
-      <Transition name="slide-left" mode="out-in">
-        <RoomDetails 
-          v-if="selectedRoom" 
-          :room="selectedRoom" 
-          @close="selectedRoom = null"
-          @markDirty="markRoomDirty"
-          class="bg-white shadow-xl"
-          style="width: 30vw; min-width: 300px; max-width: 500px;"
-        />
+      <!-- Room Details Panel - FORCÉ À DROITE DE L'ÉCRAN -->
+      <Transition name="fade">
+        <div v-if="selectedRoom" 
+             :key="selectedRoom.id"
+             class="room-details-panel room-update-animation" 
+             style="position: fixed !important; top: 0 !important; right: 0 !important; width: 400px !important; height: 100vh !important; z-index: 1000 !important; background: white !important; box-shadow: -4px 0 15px rgba(0,0,0,0.1) !important; border-left: 1px solid #e5e7eb !important; overflow: hidden !important;">
+          <RoomDetails 
+            :room="selectedRoom"
+            @close="selectedRoom = null"
+            @markDirty="markRoomDirty"
+          />
+        </div>
       </Transition>
     </main>
   </div>
@@ -108,6 +118,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+// Import component
 import HotelFloorPlan from './components/HotelFloorPlan.vue'
 import RoomDetails from './components/RoomDetails.vue'
 
@@ -120,6 +131,7 @@ interface Room {
   price: number
   capacity: number
   amenities: string[]
+  position?: { x: number, z: number } // Optional position for 3D rooms
 }
 
 // State
@@ -152,7 +164,20 @@ function selectRoom(room: Room | null) {
 }
 
 function handleRoomSelection(room: Room | null) {
-  selectRoom(room)
+  selectedRoom.value = room
+}
+
+function testRoomSelection() {
+  const testRoom: Room = {
+    id: 'test-123',
+    number: 'TEST',
+    status: 'available',
+    type: 'deluxe',
+    price: 150,
+    capacity: 2,
+    amenities: ['wifi', 'tv', 'minibar', 'balcony']
+  }
+  selectedRoom.value = testRoom
 }
 
 function getRoomButtonColor(status: string): string {
@@ -169,6 +194,10 @@ function markRoomDirty(roomId: string) {
   const room = allRooms.value.find(r => r.id === roomId)
   if (room) {
     room.status = 'cleaning'
+    // Update selectedRoom if it's the same room
+    if (selectedRoom.value?.id === roomId) {
+      selectedRoom.value = { ...room }
+    }
   }
 }
 </script>
@@ -185,20 +214,75 @@ body {
   overflow: hidden;
 }
 
-/* Enhanced transition animations */
-.slide-left-enter-active,
-.slide-left-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Animation simple fade pour le panneau - reste fixé à droite */
+.fade-enter-active {
+  transition: opacity 0.3s ease-out;
 }
 
-.slide-left-enter-from {
-  transform: translateX(100%);
+.fade-leave-active {
+  transition: opacity 0.2s ease-in;
+}
+
+.fade-enter-from {
   opacity: 0;
 }
 
-.slide-left-leave-to {
-  transform: translateX(100%);
+.fade-leave-to {
   opacity: 0;
+}
+
+/* Animation de mise à jour quand on change de chambre */
+.room-update-animation {
+  animation: roomUpdate 0.5s ease-out;
+}
+
+@keyframes roomUpdate {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.5);
+    border-left-color: #3b82f6;
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.3);
+    border-left-color: #1d4ed8;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border-left-color: #e5e7eb;
+  }
+}
+
+/* Responsive design pour le panneau RoomDetails - FORCÉ À DROITE */
+.room-details-panel {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 400px !important;
+  height: 100vh !important;
+  z-index: 1000 !important;
+}
+
+@media (max-width: 1200px) {
+  .room-details-panel {
+    width: 350px !important;
+    right: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .room-details-panel {
+    width: 300px !important;
+    right: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .room-details-panel {
+    width: 100vw !important;
+    right: 0 !important;
+  }
 }
 
 /* Global improvements */

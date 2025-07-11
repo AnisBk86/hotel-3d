@@ -1,27 +1,14 @@
 <template>
   <div class="w-full h-full bg-white shadow-xl flex flex-col">
     <!-- Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
+    <div class="bg-white border-b border-gray-200 p-4">
       <div class="flex justify-between items-center">
-        <div>
-          <h2 class="text-2xl font-bold">Room {{ room.number }}</h2>
-          <div class="flex items-center space-x-2 mt-1">
-            <span 
-              :class="[
-                'px-2 py-1 text-xs font-medium rounded-full',
-                getStatusColor(room.status)
-              ]"
-            >
-              {{ room.status.toUpperCase() }}
-            </span>
-            <span class="text-blue-100 text-sm">{{ room.type }}</span>
-          </div>
-        </div>
+        <h2 class="text-xl font-bold text-gray-900">Room Details</h2>
         <button 
           @click="$emit('close')"
-          class="text-white hover:text-blue-200 transition-colors p-1"
+          class="text-gray-400 hover:text-gray-600 transition-colors p-1"
         >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
         </button>
@@ -29,41 +16,72 @@
     </div>
 
     <!-- Content -->
-    <div class="flex-1 p-6 space-y-4 overflow-y-auto">
-      <!-- Basic Info -->
-      <div class="grid grid-cols-2 gap-4">
-        <div class="text-center p-4 bg-green-50 rounded-lg">
-          <div class="text-2xl font-bold text-green-600">${{ room.price }}</div>
-          <div class="text-sm text-gray-600">per night</div>
-        </div>
-        <div class="text-center p-4 bg-blue-50 rounded-lg">
-          <div class="text-2xl font-bold text-blue-600">{{ room.capacity }}</div>
-          <div class="text-sm text-gray-600">guests</div>
-        </div>
+    <div class="flex-1 p-4 space-y-4 overflow-y-auto">
+      <!-- Room Image -->
+      <div class="w-full h-32 bg-gradient-to-br from-amber-200 to-amber-400 rounded-lg flex items-center justify-center">
+        <img 
+          src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&h=200&fit=crop&crop=center" 
+          alt="Room Image"
+          class="w-full h-full object-cover rounded-lg"
+          @error="handleImageError"
+        />
       </div>
 
-      <!-- Amenities -->
-      <div>
-        <h3 class="font-semibold text-gray-800 mb-2">Amenities</h3>
-        <div class="flex flex-wrap gap-2">
-          <span 
-            v-for="amenity in room.amenities" 
-            :key="amenity"
-            class="px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded"
-          >
-            {{ formatAmenity(amenity) }}
+      <!-- Room Info Cards -->
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-sm font-medium text-gray-600">Price</span>
+          <span class="text-lg font-bold text-gray-900">€{{ room.price }}/ni</span>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <span class="text-sm font-medium text-gray-600">Capacity</span>
+          <span class="text-lg font-bold text-gray-900">{{ room.capacity }}</span>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <span class="text-sm font-medium text-gray-600">Status</span>
+          <span class="text-lg font-bold" :class="getStatusTextColor(room.status)">
+            {{ formatStatus(room.status) }}
           </span>
         </div>
       </div>
 
-      <!-- Actions -->
-      <div v-if="room.status === 'occupied'" class="pt-4">
+      <!-- Action Button -->
+      <div class="pt-2">
         <button 
+          v-if="room.status === 'occupied'"
           @click="$emit('markDirty', room.id)"
-          class="w-full bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors"
+          class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-3 rounded-lg transition-colors font-medium"
         >
-          Mark as Needs Cleaning
+          Mark as Dirty
         </button>
+        <button 
+          v-else
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg transition-colors font-medium"
+        >
+          Book Room
+        </button>
+      </div>
+
+      <!-- Additional Info Section -->
+      <div class="border-t border-gray-200 pt-4 space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-sm font-medium text-gray-600">Price</span>
+          <span class="text-lg font-bold text-gray-900">{{ room.price }} €</span>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <span class="text-sm font-medium text-gray-600">Capacity</span>
+          <span class="text-lg font-bold text-gray-900">{{ room.capacity }}</span>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <span class="text-sm font-medium text-gray-600">Status</span>
+          <span class="text-lg font-bold" :class="getStatusTextColor(room.status)">
+            {{ formatStatus(room.status) }}
+          </span>
+        </div>
       </div>
     </div>
   </div>
@@ -78,6 +96,7 @@ interface Room {
   price: number
   capacity: number
   amenities: string[]
+  position?: { x: number, z: number } // Optional position for 3D rooms
 }
 
 // Props
@@ -92,26 +111,39 @@ defineEmits<{
 }>()
 
 // Methods
-function getStatusColor(status: string): string {
+function getStatusTextColor(status: string): string {
   const colors = {
-    available: 'bg-green-100 text-green-800',
-    occupied: 'bg-red-100 text-red-800',
-    maintenance: 'bg-orange-100 text-orange-800',
-    cleaning: 'bg-blue-100 text-blue-800'
+    available: 'text-green-600',
+    occupied: 'text-red-600',
+    maintenance: 'text-orange-600',
+    cleaning: 'text-blue-600'
   }
-  return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'
+  return colors[status as keyof typeof colors] || 'text-gray-600'
 }
 
-function formatAmenity(amenity: string): string {
-  const amenityMap: Record<string, string> = {
-    wifi: 'Wi-Fi',
-    tv: 'TV',
-    minibar: 'Mini Bar',
-    balcony: 'Balcony',
-    ac: 'A/C',
-    safe: 'Safe'
+function formatStatus(status: string): string {
+  const statusMap: Record<string, string> = {
+    available: 'Available',
+    occupied: 'Occupied',
+    maintenance: 'Maintenance',
+    cleaning: 'Cleaning'
   }
-  return amenityMap[amenity] || amenity.charAt(0).toUpperCase() + amenity.slice(1)
+  return statusMap[status] || status
+}
+
+function handleImageError(event: Event) {
+  const target = event.target as HTMLImageElement
+  target.style.display = 'none'
+  const parent = target.parentElement
+  if (parent) {
+    parent.innerHTML = `
+      <div class="w-full h-full bg-gradient-to-br from-amber-200 to-amber-400 rounded-lg flex items-center justify-center">
+        <svg class="w-12 h-12 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2zM3 7l9 6 9-6"></path>
+        </svg>
+      </div>
+    `
+  }
 }
 </script>
 
