@@ -79,6 +79,11 @@ let selectedRoom: THREE.Group | null = null
 const hoverAnimationSpeed = 0.15 // Increased speed for more responsiveness
 let roomAnimations: Map<string, { targetScale: number, currentScale: number }> = new Map()
 
+// Label management
+let roomLabels: Map<string, THREE.Mesh> = new Map()
+let labelAnimations: Map<string, { targetOpacity: number, currentOpacity: number }> = new Map()
+const labelAnimationSpeed = 0.12 // Speed for label fade in/out animations
+
 // Zoom settings
 let zoomLevel = 1
 const minZoom = 0.5
@@ -135,7 +140,7 @@ function getStatusColor(status: string): number {
   const colors = {
     available: 0x4ade80,  // Green
     occupied: 0xef4444,   // Red
-    maintenance: 0xf97316, // Orange
+    maintenance: 0xfab976, // Orange clair
     cleaning: 0x3b82f6    // Blue
   }
   return colors[status as keyof typeof colors] || 0x6b7280
@@ -277,24 +282,108 @@ function createRoom(roomData: any) {
 function createRoomLabel(roomData: any) {
   const canvas = document.createElement('canvas')
   const context = canvas.getContext('2d')!
-  canvas.width = 128
-  canvas.height = 64
+  canvas.width = 200
+  canvas.height = 120
   
-  context.fillStyle = '#ffffff'
-  context.fillRect(0, 0, 128, 64)
-  context.fillStyle = '#000000'
-  context.font = 'bold 24px Arial'
+  // Polyfill for roundRect if not available
+  if (!context.roundRect) {
+    (context as any).roundRect = function(x: number, y: number, width: number, height: number, radius: number) {
+      this.beginPath()
+      this.moveTo(x + radius, y)
+      this.lineTo(x + width - radius, y)
+      this.quadraticCurveTo(x + width, y, x + width, y + radius)
+      this.lineTo(x + width, y + height - radius)
+      this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height)
+      this.lineTo(x + radius, y + height)
+      this.quadraticCurveTo(x, y + height, x, y + height - radius)
+      this.lineTo(x, y + radius)
+      this.quadraticCurveTo(x, y, x + radius, y)
+    }
+  }
+  
+  // Effacer le canvas
+  context.clearRect(0, 0, 200, 120)
+  
+  // Dimensions du rectangle
+  const centerX = 100
+  const centerY = 60
+  const rectWidth = 180
+  const rectHeight = 100
+  const cornerRadius = 8
+  
+  // Ombre portée plus prononcée
+  context.beginPath()
+  ;(context as any).roundRect(centerX - rectWidth/2 + 3, centerY - rectHeight/2 + 3, rectWidth, rectHeight, cornerRadius)
+  context.fillStyle = 'rgba(0, 0, 0, 0.4)'
+  context.fill()
+  
+  // Fond du rectangle avec gradient linéaire plus moderne et opacité réduite à 70%
+  const gradient = context.createLinearGradient(centerX - rectWidth/2, centerY - rectHeight/2, centerX + rectWidth/2, centerY + rectHeight/2)
+  gradient.addColorStop(0, 'rgba(255, 255, 255, 0.7)')
+  gradient.addColorStop(0.5, 'rgba(248, 250, 252, 0.7)')
+  gradient.addColorStop(1, 'rgba(226, 232, 240, 0.7)')
+  
+  context.beginPath()
+  ;(context as any).roundRect(centerX - rectWidth/2, centerY - rectHeight/2, rectWidth, rectHeight, cornerRadius)
+  context.fillStyle = gradient
+  context.fill()
+  
+  // Bordure extérieure épaisse et contrastée
+  context.beginPath()
+  ;(context as any).roundRect(centerX - rectWidth/2, centerY - rectHeight/2, rectWidth, rectHeight, cornerRadius)
+  context.strokeStyle = '#0f172a'
+  context.lineWidth = 6
+  context.stroke()
+  
+  // Bordure intérieure pour plus de définition
+  context.beginPath()
+  ;(context as any).roundRect(centerX - rectWidth/2 + 3, centerY - rectHeight/2 + 3, rectWidth - 6, rectHeight - 6, cornerRadius - 3)
+  context.strokeStyle = '#475569'
+  context.lineWidth = 2
+  context.stroke()
+  
+  // Texte du numéro avec police Orbitron et ombre portée
+  // Ombre du texte plus prononcée
+  context.fillStyle = 'rgba(0, 0, 0, 0.5)'
+  context.font = 'bold 56px Orbitron, Arial, sans-serif'
   context.textAlign = 'center'
-  context.fillText(roomData.number, 64, 40)
+  context.textBaseline = 'middle'
+  context.fillText(roomData.number, centerX + 2, centerY + 2)
+  
+  // Texte principal avec couleur plus contrastée
+  context.fillStyle = '#0f172a'
+  context.font = 'bold 56px Orbitron, Arial, sans-serif'
+  context.fillText(roomData.number, centerX, centerY)
   
   const texture = new THREE.CanvasTexture(canvas)
-  const labelMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true })
-  const labelGeom = new THREE.PlaneGeometry(1, 0.5)
+  const labelMat = new THREE.MeshBasicMaterial({ 
+    map: texture, 
+    transparent: true,
+    opacity: 0 // Start invisible, will animate to 1.0 on hover
+  })
+  const labelGeom = new THREE.PlaneGeometry(2.0, 1.2)
   const label = new THREE.Mesh(labelGeom, labelMat)
-  label.position.set(roomData.position.x, 2.5, roomData.position.z)
+  
+  // Positionner le label parfaitement centré au milieu de chaque chambre
+  const offsetX = 0  // Centré horizontalement
+  const offsetY = 2.8 // Hauteur constante au-dessus de la chambre
+  const offsetZ = 0   // Centré en profondeur
+  
+  label.position.set(
+    roomData.position.x + offsetX, 
+    offsetY, 
+    roomData.position.z + offsetZ
+  )
+  
   label.lookAt(camera.position)
   label.userData = { roomId: roomData.id, roomData }
   scene.add(label)
+  
+  // Store the label for animation management
+  roomLabels.set(roomData.id, label)
+  
+  // Initialize label animation state
+  labelAnimations.set(roomData.id, { targetOpacity: 0, currentOpacity: 0 })
 }
 
 function setupLighting() {
@@ -402,6 +491,11 @@ function handleMouseMove(event: MouseEvent) {
       } else {
         roomAnimations.get(roomId)!.targetScale = 1
       }
+      
+      // Hide label for this room
+      if (labelAnimations.has(roomId)) {
+        labelAnimations.get(roomId)!.targetOpacity = 0
+      }
     }
     hoveredRoom = null
   }
@@ -455,6 +549,11 @@ function handleMouseMove(event: MouseEvent) {
           } else {
             roomAnimations.get(roomId)!.targetScale = 1.1
           }
+          
+          // Show label for this room with 100% opacity
+          if (labelAnimations.has(roomId)) {
+            labelAnimations.get(roomId)!.targetOpacity = 1.0
+          }
         }
         
         // Change cursor to pointer
@@ -490,6 +589,25 @@ function animate() {
     }
   })
   
+  // Animate all room labels that have active animations
+  labelAnimations.forEach((animation, roomId) => {
+    const label = roomLabels.get(roomId)
+    if (label && label.material instanceof THREE.MeshBasicMaterial) {
+      // Smooth opacity animation
+      animation.currentOpacity += (animation.targetOpacity - animation.currentOpacity) * labelAnimationSpeed
+      label.material.opacity = animation.currentOpacity
+      
+      // Remove animation if it's close enough to target
+      if (Math.abs(animation.currentOpacity - animation.targetOpacity) < 0.01) {
+        animation.currentOpacity = animation.targetOpacity
+        label.material.opacity = animation.targetOpacity
+        
+        // Keep the animation in the map but mark it as stable
+        // This allows for quick re-activation on hover
+      }
+    }
+  })
+  
   renderer.render(scene, camera)
 }
 
@@ -502,13 +620,23 @@ function handleResize() {
 function handleWheel(event: WheelEvent) {
   event.preventDefault()
   
+  if (!camera) return
+  
+  // Update zoom level
   if (event.deltaY < 0) {
     // Scroll up - zoom in
-    zoomIn()
+    if (zoomLevel < maxZoom) {
+      zoomLevel += zoomStep
+    }
   } else {
     // Scroll down - zoom out
-    zoomOut()
+    if (zoomLevel > minZoom) {
+      zoomLevel -= zoomStep
+    }
   }
+  
+  // Update camera projection
+  updateCameraZoom()
 }
 
 // Lifecycle

@@ -1,7 +1,7 @@
 <template>
   <div class="w-full h-full bg-white shadow-xl flex flex-col">
     <!-- Header -->
-    <div class="bg-white border-b border-gray-200 p-4">
+    <div class="border-b border-gray-200 p-4">
       <div class="flex justify-between items-center">
         <h2 class="text-xl font-bold text-gray-900">Room Details</h2>
         <button 
@@ -58,7 +58,7 @@
         </button>
         <button 
           v-else
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg transition-colors font-medium"
+          class="w-full bg-blue-400 hover:bg-blue-500 text-white px-4 py-3 rounded-lg transition-colors font-medium"
         >
           Book Room
         </button>
@@ -113,10 +113,10 @@ defineEmits<{
 // Methods
 function getStatusTextColor(status: string): string {
   const colors = {
-    available: 'text-green-600',
-    occupied: 'text-red-600',
-    maintenance: 'text-orange-600',
-    cleaning: 'text-blue-600'
+    available: 'text-green-400',
+    occupied: 'text-red-400',
+    maintenance: 'text-orange-400',
+    cleaning: 'text-blue-400'
   }
   return colors[status as keyof typeof colors] || 'text-gray-600'
 }

@@ -1,1 +1,0 @@
-Suppression des fichiers doublons FloorMap3D* sauf FloorMap3DIsometric.vue (maquette principale).
