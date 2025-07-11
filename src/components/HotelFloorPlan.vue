@@ -73,6 +73,12 @@ let roomMeshes: Map<string, THREE.Group> = new Map()
 let hoveredRoom: THREE.Group | null = null
 let selectedRoom: THREE.Group | null = null
 
+// Animation variables
+let targetHoverScale = 1
+let currentHoverScale = 1
+const hoverAnimationSpeed = 0.15 // Increased speed for more responsiveness
+let roomAnimations: Map<string, { targetScale: number, currentScale: number }> = new Map()
+
 // Zoom settings
 let zoomLevel = 1
 const minZoom = 0.5
@@ -258,6 +264,9 @@ function createRoom(roomData: any) {
   clickArea.name = `room-clickarea-${roomData.id}`
   roomGroup.add(clickArea)
 
+  // Add userData to the room group for animation tracking
+  roomGroup.userData = { roomId: roomData.id, roomData }
+
   scene.add(roomGroup)
   roomMeshes.set(roomData.id, roomGroup)
 
@@ -382,10 +391,25 @@ function handleMouseMove(event: MouseEvent) {
         if (child.name?.includes('wall')) {
           material.opacity = 0.7 // Reset wall opacity
         }
-        material.emissive.setHex(0x000000) // Reset glow
+        material.emissive.setHex(0x000000) // Reset glow completely
       }
     })
+    
+    // Set target scale to 1 for smooth shrinking animation
+    const roomId = hoveredRoom.userData.roomId
+    if (roomId) {
+      if (!roomAnimations.has(roomId)) {
+        roomAnimations.set(roomId, { targetScale: 1, currentScale: hoveredRoom.scale.x })
+      } else {
+        roomAnimations.get(roomId)!.targetScale = 1
+      }
+    }
     hoveredRoom = null
+  }
+
+  // Reset target scale when not hovering
+  if (!hoveredRoom) {
+    targetHoverScale = 1
   }
 
   // Set default cursor
@@ -418,11 +442,21 @@ function handleMouseMove(event: MouseEvent) {
           if (child instanceof THREE.Mesh && child.material && !child.name?.includes('clickarea')) {
             const material = child.material as THREE.MeshLambertMaterial
             if (child.name?.includes('wall')) {
-              material.opacity = 0.8 // Slightly increase wall opacity on hover
+              material.opacity = 0.9 // Increase wall opacity on hover
             }
-            material.emissive.setHex(0x111111) // Add subtle hover glow
+            material.emissive.setHex(0x333366) // Add blue-ish hover glow
           }
         })
+        
+        // Set target scale for smooth animation
+        const roomId = roomGroup.userData.roomId
+        if (roomId) {
+          if (!roomAnimations.has(roomId)) {
+            roomAnimations.set(roomId, { targetScale: 1.1, currentScale: roomGroup.scale.x })
+          } else {
+            roomAnimations.get(roomId)!.targetScale = 1.1
+          }
+        }
         
         // Change cursor to pointer
         if (threeContainer.value) {
@@ -435,6 +469,28 @@ function handleMouseMove(event: MouseEvent) {
 
 function animate() {
   animationId = requestAnimationFrame(animate)
+  
+  // Animate all rooms that have active animations
+  roomAnimations.forEach((animation, roomId) => {
+    const roomGroup = roomMeshes.get(roomId)
+    if (roomGroup) {
+      // Smooth scale animation
+      animation.currentScale += (animation.targetScale - animation.currentScale) * hoverAnimationSpeed
+      roomGroup.scale.set(animation.currentScale, animation.currentScale, animation.currentScale)
+      
+      // Remove animation if it's close enough to target (avoid infinite micro-animations)
+      if (Math.abs(animation.currentScale - animation.targetScale) < 0.01) {
+        animation.currentScale = animation.targetScale
+        roomGroup.scale.set(animation.targetScale, animation.targetScale, animation.targetScale)
+        
+        // Remove from animations map if back to normal size
+        if (animation.targetScale === 1) {
+          roomAnimations.delete(roomId)
+        }
+      }
+    }
+  })
+  
   renderer.render(scene, camera)
 }
 

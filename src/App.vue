@@ -93,7 +93,7 @@
 
       <!-- Room Details Panel -->
       <Transition name="slide-left" mode="out-in">
-        <RoomDetailsNew 
+        <RoomDetails 
           v-if="selectedRoom" 
           :room="selectedRoom" 
           @close="selectedRoom = null"
@@ -109,7 +109,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import HotelFloorPlan from './components/HotelFloorPlan.vue'
-import RoomDetailsNew from './components/RoomDetailsNew.vue'
+import RoomDetails from './components/RoomDetails.vue'
 
 // Types
 interface Room {
