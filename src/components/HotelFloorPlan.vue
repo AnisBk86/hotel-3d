@@ -21,7 +21,12 @@
       </button>
       <button 
         @click="zoomOut"
-        class="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 px-3 py-2 rounded-lg shadow-lg transition-all duration-300 text-xl font-bold"
+        class="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 px-3 py-2 rounded-lg shad// Expose methods and data to parent component
+defineExpose({
+  updateRoomStatus,
+  getRoomData: (roomId: string) => hotelRooms.find(room => room.id === roomId),
+  getAllRoomsData: () => hotelRooms
+})g transition-all duration-300 text-xl font-bold"
         title="Zoom Out"
       >
         −
@@ -92,23 +97,54 @@ const zoomStep = 0.2
 
 // Hotel rooms data
 const hotelRooms = [
-  { id: '10', number: '10', status: 'available', type: 'standard', price: 120, capacity: 2, amenities: ['wifi', 'tv'], position: { x: 6, z: -3 } },
-  { id: '11', number: '11', status: 'occupied', type: 'deluxe', price: 150, capacity: 2, amenities: ['wifi', 'tv', 'minibar'], position: { x: 6, z: 0 } },
-  { id: '12', number: '12', status: 'available', type: 'suite', price: 200, capacity: 4, amenities: ['wifi', 'tv', 'minibar', 'balcony'], position: { x: 3, z: -6 } },
-  { id: '13', number: '13', status: 'occupied', type: 'standard', price: 120, capacity: 2, amenities: ['wifi', 'tv'], position: { x: 0, z: -6 } },
-  { id: '14', number: '14', status: 'maintenance', type: 'deluxe', price: 150, capacity: 2, amenities: ['wifi', 'tv', 'minibar'], position: { x: -3, z: -6 } },
-  { id: '15', number: '15', status: 'cleaning', type: 'suite', price: 200, capacity: 4, amenities: ['wifi', 'tv', 'minibar', 'balcony'], position: { x: -6, z: -3 } },
-  { id: '16', number: '16', status: 'occupied', type: 'standard', price: 120, capacity: 2, amenities: ['wifi', 'tv'], position: { x: -6, z: 0 } },
-  { id: '17', number: '17', status: 'occupied', type: 'deluxe', price: 150, capacity: 2, amenities: ['wifi', 'tv', 'minibar'], position: { x: -6, z: 3 } },
-  { id: '18', number: '18', status: 'occupied', type: 'suite', price: 200, capacity: 4, amenities: ['wifi', 'tv', 'minibar', 'balcony'], position: { x: -3, z: 6 } },
-  { id: '19', number: '19', status: 'cleaning', type: 'standard', price: 120, capacity: 2, amenities: ['wifi', 'tv'], position: { x: 0, z: 6 } },
+  // Première série de chambres (101-110)
+  { id: '101', number: '101', status: 'available', type: 'standard', price: 120, capacity: 2, amenities: ['wifi', 'tv'], position: { x: 6, z: -3 } },
+  { id: '102', number: '102', status: 'occupied', type: 'deluxe', price: 150, capacity: 2, amenities: ['wifi', 'tv', 'minibar'], position: { x: 6, z: 0 } },
+  { id: '103', number: '103', status: 'available', type: 'suite', price: 200, capacity: 4, amenities: ['wifi', 'tv', 'minibar', 'balcony'], position: { x: 3, z: -6 } },
+  { id: '104', number: '104', status: 'occupied', type: 'standard', price: 120, capacity: 2, amenities: ['wifi', 'tv'], position: { x: 0, z: -6 } },
+  { id: '105', number: '105', status: 'maintenance', type: 'deluxe', price: 150, capacity: 2, amenities: ['wifi', 'tv', 'minibar'], position: { x: -3, z: -6 } },
+  { id: '106', number: '106', status: 'cleaning', type: 'suite', price: 200, capacity: 4, amenities: ['wifi', 'tv', 'minibar', 'balcony'], position: { x: -6, z: -3 } },
+  { id: '107', number: '107', status: 'occupied', type: 'standard', price: 120, capacity: 2, amenities: ['wifi', 'tv'], position: { x: -6, z: 0 } },
+  { id: '108', number: '108', status: 'occupied', type: 'deluxe', price: 150, capacity: 2, amenities: ['wifi', 'tv', 'minibar'], position: { x: -6, z: 3 } },
+  { id: '109', number: '109', status: 'occupied', type: 'suite', price: 200, capacity: 4, amenities: ['wifi', 'tv', 'minibar', 'balcony'], position: { x: -3, z: 6 } },
+  { id: '110', number: '110', status: 'cleaning', type: 'standard', price: 120, capacity: 2, amenities: ['wifi', 'tv'], position: { x: 0, z: 6 } },
+  
+  // Nouvelle série de chambres (111-112) - en parallèle avec les chambres 101 et 102
+  { id: '111', number: '111', status: 'available', type: 'deluxe', price: 160, capacity: 2, amenities: ['wifi', 'tv', 'minibar'], position: { x: 10, z: -3 } },
+  { id: '112', number: '112', status: 'occupied', type: 'suite', price: 220, capacity: 4, amenities: ['wifi', 'tv', 'minibar', 'balcony'], position: { x: 10, z: 0 } },
+  
+  // Nouvelles chambres adjacentes aux chambres 111 et 112
+  { id: '125', number: '125', status: 'available', type: 'standard', price: 150, capacity: 2, amenities: ['wifi', 'tv'], position: { x: 10, z: -6 } }, // À côté de la chambre 111
+  { id: '126', number: '126', status: 'cleaning', type: 'deluxe', price: 180, capacity: 3, amenities: ['wifi', 'tv', 'minibar'], position: { x: 10, z: 3 } }, // À côté de la chambre 112
+  
+  // Chambres 113-116 repositionnées en parallèle avec les chambres 109 et 110
+  { id: '113', number: '113', status: 'maintenance', type: 'deluxe', price: 160, capacity: 2, amenities: ['wifi', 'tv', 'minibar'], position: { x: 3, z: 10 } },
+  { id: '114', number: '114', status: 'cleaning', type: 'suite', price: 220, capacity: 4, amenities: ['wifi', 'tv', 'minibar', 'balcony'], position: { x: 0, z: 10 } },
+  { id: '115', number: '115', status: 'available', type: 'presidential', price: 400, capacity: 6, amenities: ['wifi', 'tv', 'minibar', 'balcony', 'jacuzzi', 'butler'], position: { x: -3, z: 10 } },
+  { id: '116', number: '116', status: 'occupied', type: 'deluxe', price: 160, capacity: 2, amenities: ['wifi', 'tv', 'minibar'], position: { x: -6, z: 10 } },
+  
+  // Chambres 117-119 repositionnées en parallèle avec les chambres 106, 107, 108 + 2 nouvelles chambres
+  { id: '117', number: '117', status: 'available', type: 'standard', price: 130, capacity: 2, amenities: ['wifi', 'tv'], position: { x: -10, z: -3 } }, // En parallèle avec chambre 106
+  { id: '118', number: '118', status: 'occupied', type: 'suite', price: 220, capacity: 4, amenities: ['wifi', 'tv', 'minibar', 'balcony'], position: { x: -10, z: 0 } }, // En parallèle avec chambre 107
+  { id: '119', number: '119', status: 'cleaning', type: 'deluxe', price: 160, capacity: 2, amenities: ['wifi', 'tv', 'minibar'], position: { x: -10, z: 3 } }, // En parallèle avec chambre 108
+  
+  // Nouvelles chambres 127 et 128 pour compléter la ligne
+  { id: '127', number: '127', status: 'maintenance', type: 'standard', price: 135, capacity: 2, amenities: ['wifi', 'tv'], position: { x: -10, z: -6 } }, // Nouvelle chambre au sud
+  { id: '128', number: '128', status: 'available', type: 'deluxe', price: 175, capacity: 3, amenities: ['wifi', 'tv', 'minibar'], position: { x: -10, z: 6 } }, // Nouvelle chambre au nord
+  
+  // Nouvelles chambres (120-124) en parallèle aux chambres 103, 104, 105
+  { id: '120', number: '120', status: 'available', type: 'deluxe', price: 170, capacity: 2, amenities: ['wifi', 'tv', 'minibar'], position: { x: 6, z: -10 } },
+  { id: '121', number: '121', status: 'occupied', type: 'standard', price: 140, capacity: 2, amenities: ['wifi', 'tv'], position: { x: 3, z: -10 } },
+  { id: '122', number: '122', status: 'cleaning', type: 'suite', price: 230, capacity: 4, amenities: ['wifi', 'tv', 'minibar', 'balcony'], position: { x: 0, z: -10 } },
+  { id: '123', number: '123', status: 'available', type: 'deluxe', price: 170, capacity: 2, amenities: ['wifi', 'tv', 'minibar'], position: { x: -3, z: -10 } },
+  { id: '124', number: '124', status: 'maintenance', type: 'standard', price: 140, capacity: 2, amenities: ['wifi', 'tv'], position: { x: -6, z: -10 } },
 ]
 
 function resetCamera() {
   zoomLevel = 1
   updateCameraZoom()
-  camera.position.set(20, 20, 20)
-  camera.lookAt(0, 0, 0)
+  camera.position.set(35, 35, 35) // Augmenté pour voir la zone étendue vers l'ouest (x=-10)
+  camera.lookAt(0, 0, 0) // Centré sur l'origine pour voir l'ensemble du plan
 }
 
 function zoomIn() {
@@ -128,7 +164,7 @@ function zoomOut() {
 function updateCameraZoom() {
   if (!camera || !threeContainer.value) return
   const aspect = threeContainer.value.clientWidth / threeContainer.value.clientHeight
-  const frustumSize = 25 / zoomLevel
+  const frustumSize = 50 / zoomLevel // Augmenté de 45 à 50 pour voir les nouvelles chambres à l'ouest (x=-10)
   camera.left = -frustumSize * aspect / 2
   camera.right = frustumSize * aspect / 2
   camera.top = frustumSize / 2
@@ -136,17 +172,85 @@ function updateCameraZoom() {
   camera.updateProjectionMatrix()
 }
 
-function getStatusColor(status: string): number {
+function getStatusColorHex(status: string): number {
   const colors = {
-    available: 0x4ade80,  // Green
-    occupied: 0xef4444,   // Red
-    maintenance: 0xfab976, // Orange clair
-    cleaning: 0x3b82f6    // Blue
+    available: 0x4ade80,  // Vert
+    occupied: 0xef4444,   // Rouge
+    maintenance: 0x60a5fa, // Bleu clair
+    cleaning: 0xfbbf24    // Jaune beurre
   }
   return colors[status as keyof typeof colors] || 0x6b7280
 }
 
 function createHotelFloor() {
+  // Sol commun en carrelage blanc cassé couvrant toute la zone
+  const floorGeom = new THREE.PlaneGeometry(24, 24) // Taille étendue pour couvrir de x=-12 à x=12 et z=-12 à z=12
+  
+  // Création d'une texture de carrelage
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 512
+  const context = canvas.getContext('2d')!
+  
+  // Couleur de base blanc cassé
+  const baseColor = '#f8f6f0'
+  const groutColor = '#e8e6e0'
+  
+  // Remplir le fond
+  context.fillStyle = baseColor
+  context.fillRect(0, 0, 512, 512)
+  
+  // Dessiner les joints de carrelage
+  const tileSize = 64 // Taille d'un carreau en pixels
+  context.strokeStyle = groutColor
+  context.lineWidth = 2
+  
+  // Lignes verticales
+  for (let x = 0; x <= 512; x += tileSize) {
+    context.beginPath()
+    context.moveTo(x, 0)
+    context.lineTo(x, 512)
+    context.stroke()
+  }
+  
+  // Lignes horizontales
+  for (let y = 0; y <= 512; y += tileSize) {
+    context.beginPath()
+    context.moveTo(0, y)
+    context.lineTo(512, y)
+    context.stroke()
+  }
+  
+  // Ajouter des variations subtiles dans les carreaux
+  for (let x = 0; x < 8; x++) {
+    for (let y = 0; y < 8; y++) {
+      // Variation aléatoire très subtile de la couleur
+      const variation = Math.random() * 0.02 - 0.01
+      const tileX = x * tileSize + 1
+      const tileY = y * tileSize + 1
+      const tileW = tileSize - 2
+      const tileH = tileSize - 2
+      
+      context.fillStyle = `hsl(60, 5%, ${92 + variation * 100}%)`
+      context.fillRect(tileX, tileY, tileW, tileH)
+    }
+  }
+  
+  const floorTexture = new THREE.CanvasTexture(canvas)
+  floorTexture.wrapS = THREE.RepeatWrapping
+  floorTexture.wrapT = THREE.RepeatWrapping
+  floorTexture.repeat.set(4, 4) // Répéter la texture pour couvrir la zone
+  
+  const floorMat = new THREE.MeshLambertMaterial({ 
+    map: floorTexture,
+    color: 0xffffff
+  })
+  
+  const floor = new THREE.Mesh(floorGeom, floorMat)
+  floor.rotation.x = -Math.PI / 2
+  floor.position.set(0, -0.01, 0) // Légèrement en dessous des autres éléments
+  scene.add(floor)
+
   // Central courtyard/lobby
   const courtyardGeom = new THREE.PlaneGeometry(8, 8)
   const courtyardMat = new THREE.MeshLambertMaterial({ color: 0xf0f0f0 })
@@ -182,6 +286,66 @@ function createHotelFloor() {
   vCorridor2.position.set(4.5, 0.01, 0)
   scene.add(vCorridor2)
 
+  // Nouveau couloir reliant la chambre 11 (6,0) à la chambre 19 (0,6)
+  // Ce couloir suit une diagonale de la chambre 11 vers la chambre 19
+  const diagonalCorridorGeom = new THREE.PlaneGeometry(1.5, 9) // Largeur 1.5, longueur 9
+  const diagonalCorridor = new THREE.Mesh(diagonalCorridorGeom, corridorMat)
+  diagonalCorridor.rotation.x = -Math.PI / 2
+  diagonalCorridor.rotation.z = Math.PI / 4 // Rotation de 45 degrés pour la diagonale
+  diagonalCorridor.position.set(3, 0.01, 3) // Position centrale entre les deux chambres
+  scene.add(diagonalCorridor)
+
+  // Couloirs d'extension pour connecter aux nouvelles chambres (20-29)
+  // Couloir horizontal élargi entre les chambres 10,11 et 20,21
+  const eastCorridorGeom = new THREE.PlaneGeometry(8, 2.5) // Élargi de 6x1.5 à 8x2.5
+  const eastCorridor = new THREE.Mesh(eastCorridorGeom, corridorMat)
+  eastCorridor.rotation.x = -Math.PI / 2
+  eastCorridor.position.set(8, 0.01, -1.5)
+  scene.add(eastCorridor)
+
+  // Couloir vertical pour connecter aux chambres du haut
+  const eastVerticalCorridorGeom = new THREE.PlaneGeometry(2.5, 6)
+  const eastVerticalCorridor = new THREE.Mesh(eastVerticalCorridorGeom, corridorMat)
+  eastVerticalCorridor.rotation.x = -Math.PI / 2
+  eastVerticalCorridor.position.set(8, 0.01, 3)
+  scene.add(eastVerticalCorridor)
+
+  // Couloirs supplémentaires pour les nouvelles chambres 34 et 35
+  // Couloir vertical étendu pour couvrir les chambres 34, 20, 21, 35
+  const eastExtendedCorridorGeom = new THREE.PlaneGeometry(2.5, 12) // Étendu pour couvrir de z=-6 à z=6
+  const eastExtendedCorridor = new THREE.Mesh(eastExtendedCorridorGeom, corridorMat)
+  eastExtendedCorridor.rotation.x = -Math.PI / 2
+  eastExtendedCorridor.position.set(8, 0.01, -1.5) // Centré entre les chambres
+  scene.add(eastExtendedCorridor)
+
+  // Couloir horizontal entre les chambres 12,13,14 et les nouvelles chambres 29,30,31,32,33
+  const southCorridorGeom = new THREE.PlaneGeometry(14, 2) // Largeur 14 pour couvrir toutes les chambres, hauteur 2
+  const southCorridor = new THREE.Mesh(southCorridorGeom, corridorMat)
+  southCorridor.rotation.x = -Math.PI / 2
+  southCorridor.position.set(0, 0.01, -8) // Positionné entre z=-6 et z=-10
+  scene.add(southCorridor)
+
+  // Couloir horizontal entre les chambres 18,19 et les nouvelles chambres 22,23,24,25
+  const northCorridorGeom = new THREE.PlaneGeometry(12, 2) // Largeur 12 pour couvrir les chambres, hauteur 2
+  const northCorridor = new THREE.Mesh(northCorridorGeom, corridorMat)
+  northCorridor.rotation.x = -Math.PI / 2
+  northCorridor.position.set(-1.5, 0.01, 8) // Positionné entre z=6 et z=10, centré sur les chambres
+  scene.add(northCorridor)
+
+  // Couloir horizontal entre les chambres 15,16,17 et les nouvelles chambres 26,27,28,36,37
+  const westCorridorGeom = new THREE.PlaneGeometry(8, 2.5) // Élargi pour un meilleur passage
+  const westCorridor = new THREE.Mesh(westCorridorGeom, corridorMat)
+  westCorridor.rotation.x = -Math.PI / 2
+  westCorridor.position.set(-8, 0.01, 0) // Positionné entre x=-6 et x=-10, centré verticalement
+  scene.add(westCorridor)
+
+  // Couloir vertical pour connecter les nouvelles chambres ouest (36, 26, 27, 28, 37)
+  const westVerticalCorridorGeom = new THREE.PlaneGeometry(2.5, 14) // Couvre de z=-6 à z=6
+  const westVerticalCorridor = new THREE.Mesh(westVerticalCorridorGeom, corridorMat)
+  westVerticalCorridor.rotation.x = -Math.PI / 2
+  westVerticalCorridor.position.set(-8, 0.01, 0) // Même position que le couloir horizontal principal
+  scene.add(westVerticalCorridor)
+
   // Create rooms
   hotelRooms.forEach(room => {
     createRoom(room)
@@ -200,7 +364,7 @@ function createRoom(roomData: any) {
 
   // Room base (floor) - Make it larger for better click detection
   const roomGeom = new THREE.BoxGeometry(roomSize * 1.1, 0.1, roomSize * 1.1)
-  const roomMat = new THREE.MeshLambertMaterial({ color: getStatusColor(roomData.status) })
+  const roomMat = new THREE.MeshLambertMaterial({ color: getStatusColorHex(roomData.status) })
   const roomMesh = new THREE.Mesh(roomGeom, roomMat)
   roomMesh.position.set(0, 0.05, 0)
   roomMesh.userData = { roomId: roomData.id, roomData }
@@ -208,7 +372,7 @@ function createRoom(roomData: any) {
   roomGroup.add(roomMesh)
 
   // Walls with 70% opacity and status color
-  const wallColor = getStatusColor(roomData.status)
+  const wallColor = getStatusColorHex(roomData.status)
   const wallMat = new THREE.MeshLambertMaterial({ 
     color: wallColor,
     transparent: true,
@@ -283,7 +447,7 @@ function createRoomLabel(roomData: any) {
   const canvas = document.createElement('canvas')
   const context = canvas.getContext('2d')!
   canvas.width = 200
-  canvas.height = 120
+  canvas.height = 160  // Augmenté pour accommoder le texte du statut
   
   // Polyfill for roundRect if not available
   if (!context.roundRect) {
@@ -302,13 +466,13 @@ function createRoomLabel(roomData: any) {
   }
   
   // Effacer le canvas
-  context.clearRect(0, 0, 200, 120)
+  context.clearRect(0, 0, 200, 160)
   
-  // Dimensions du rectangle
+  // Dimensions du rectangle (plus grand)
   const centerX = 100
-  const centerY = 60
+  const centerY = 80
   const rectWidth = 180
-  const rectHeight = 100
+  const rectHeight = 140  // Augmenté pour le texte du statut
   const cornerRadius = 8
   
   // Ombre portée plus prononcée
@@ -328,14 +492,15 @@ function createRoomLabel(roomData: any) {
   context.fillStyle = gradient
   context.fill()
   
-  // Bordure extérieure épaisse et contrastée
+  // Bordure extérieure avec couleur selon le statut de la chambre
+  const statusColor = getStatusColor(roomData.status)
   context.beginPath()
   ;(context as any).roundRect(centerX - rectWidth/2, centerY - rectHeight/2, rectWidth, rectHeight, cornerRadius)
-  context.strokeStyle = '#0f172a'
+  context.strokeStyle = statusColor
   context.lineWidth = 6
   context.stroke()
   
-  // Bordure intérieure pour plus de définition
+  // Bordure intérieure pour plus de définition (plus sombre)
   context.beginPath()
   ;(context as any).roundRect(centerX - rectWidth/2 + 3, centerY - rectHeight/2 + 3, rectWidth - 6, rectHeight - 6, cornerRadius - 3)
   context.strokeStyle = '#475569'
@@ -343,17 +508,30 @@ function createRoomLabel(roomData: any) {
   context.stroke()
   
   // Texte du numéro avec police Orbitron et ombre portée
-  // Ombre du texte plus prononcée
-  context.fillStyle = 'rgba(0, 0, 0, 0.5)'
-  context.font = 'bold 56px Orbitron, Arial, sans-serif'
+  // Ombre du texte plus légère (blanche) pour contraster avec le texte noir
+  context.fillStyle = 'rgba(255, 255, 255, 0.4)'
+  context.font = 'bold 48px Orbitron, Arial, sans-serif'  // Taille réduite pour faire place au statut
   context.textAlign = 'center'
   context.textBaseline = 'middle'
-  context.fillText(roomData.number, centerX + 2, centerY + 2)
+  context.fillText(roomData.number, centerX + 2, centerY - 25 + 2)  // Décalé vers le haut
   
-  // Texte principal avec couleur plus contrastée
-  context.fillStyle = '#0f172a'
-  context.font = 'bold 56px Orbitron, Arial, sans-serif'
-  context.fillText(roomData.number, centerX, centerY)
+  // Texte principal du numéro avec couleur unifiée (noir pour plus de clarté)
+  context.fillStyle = '#000000'
+  context.font = 'bold 48px Orbitron, Arial, sans-serif'
+  context.fillText(roomData.number, centerX, centerY - 25)  // Décalé vers le haut
+  
+  // Ajouter le statut de disponibilité sous le numéro
+  const statusText = getStatusText(roomData.status)
+  
+  // Ombre du texte du statut
+  context.fillStyle = 'rgba(255, 255, 255, 0.3)'
+  context.font = 'bold 24px Orbitron, Arial, sans-serif'
+  context.fillText(statusText, centerX + 1, centerY + 25 + 1)  // Décalé vers le bas
+  
+  // Texte du statut principal avec couleur unifiée (noir pour plus de clarté)
+  context.fillStyle = '#000000'
+  context.font = 'bold 24px Orbitron, Arial, sans-serif'
+  context.fillText(statusText, centerX, centerY + 25)  // Décalé vers le bas
   
   const texture = new THREE.CanvasTexture(canvas)
   const labelMat = new THREE.MeshBasicMaterial({ 
@@ -639,6 +817,95 @@ function handleWheel(event: WheelEvent) {
   updateCameraZoom()
 }
 
+// Fonctions utilitaires pour les statuts
+function getStatusText(status: string): string {
+  switch (status) {
+    case 'available':
+      return 'DISPONIBLE'
+    case 'occupied':
+      return 'OCCUPÉ'
+    case 'maintenance':
+      return 'MAINTENANCE'
+    case 'cleaning':
+      return 'NETTOYAGE'
+    default:
+      return 'INCONNU'
+  }
+}
+
+function getStatusColor(status: string): string {
+  switch (status) {
+    case 'available':
+      return '#16a34a'  // Vert
+    case 'occupied':
+      return '#dc2626'  // Rouge
+    case 'maintenance':
+      return '#60a5fa'  // Bleu clair
+    case 'cleaning':
+      return '#fbbf24'  // Jaune beurre
+    default:
+      return '#6b7280'  // Gris
+  }
+}
+
+// Public method to update room status
+function updateRoomStatus(roomId: string, newStatus: string) {
+  // Find the room in hotelRooms data and update it
+  const roomIndex = hotelRooms.findIndex(room => room.id === roomId)
+  if (roomIndex !== -1) {
+    hotelRooms[roomIndex].status = newStatus as any
+    
+    // Update the 3D room visual
+    const roomGroup = roomMeshes.get(roomId)
+    if (roomGroup) {
+      const newColor = getStatusColorHex(newStatus)
+      
+      // Update room floor color
+      const roomFloor = roomGroup.getObjectByName(`room-floor-${roomId}`) as THREE.Mesh
+      if (roomFloor && roomFloor.material instanceof THREE.MeshLambertMaterial) {
+        roomFloor.material.color.setHex(newColor)
+      }
+      
+      // Update wall colors
+      const wallNames = [`room-wall-back-${roomId}`, `room-wall-left-${roomId}`, `room-wall-right-${roomId}`]
+      wallNames.forEach(wallName => {
+        const wall = roomGroup.getObjectByName(wallName) as THREE.Mesh
+        if (wall && wall.material instanceof THREE.MeshLambertMaterial) {
+          wall.material.color.setHex(newColor)
+        }
+      })
+      
+      // Update room label with new status and color
+      updateRoomLabel(roomId, hotelRooms[roomIndex])
+      
+      // Update userData for the room group and all its children
+      roomGroup.userData.roomData = hotelRooms[roomIndex]
+      roomGroup.traverse((child) => {
+        if (child.userData.roomId === roomId) {
+          child.userData.roomData = hotelRooms[roomIndex]
+        }
+      })
+    }
+  }
+}
+
+function updateRoomLabel(roomId: string, roomData: any) {
+  // Remove existing label
+  const existingLabel = roomLabels.get(roomId)
+  if (existingLabel) {
+    scene.remove(existingLabel)
+    roomLabels.delete(roomId)
+  }
+  
+  // Create new label with updated status
+  createRoomLabel(roomData)
+}
+
+// Expose methods for parent component
+defineExpose({
+  updateRoomStatus
+})
+
 // Lifecycle
 onMounted(async () => {
   await nextTick()
@@ -647,7 +914,7 @@ onMounted(async () => {
     scene.background = new THREE.Color(0xf5f5f5)
     
     const aspect = window.innerWidth / window.innerHeight
-    const frustumSize = 25
+    const frustumSize = 35 // Augmenté de 25 à 35 pour voir la zone étendue
     camera = new THREE.OrthographicCamera(
       -frustumSize * aspect / 2, 
       frustumSize * aspect / 2,
@@ -656,7 +923,7 @@ onMounted(async () => {
       1,
       1000
     )
-    camera.position.set(20, 20, 20)
+    camera.position.set(25, 25, 25) // Augmenté pour voir la zone étendue
     camera.lookAt(0, 0, 0)
     
     renderer = new THREE.WebGLRenderer({ antialias: true })

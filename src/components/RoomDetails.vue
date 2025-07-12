@@ -31,12 +31,12 @@
       <div class="space-y-3">
         <div class="flex justify-between items-center">
           <span class="text-sm font-medium text-gray-600">Price</span>
-          <span class="text-lg font-bold text-gray-900">€{{ room.price }}/ni</span>
+          <span class="text-lg font-bold text-gray-900">€{{ room.price }}/night</span>
         </div>
         
         <div class="flex justify-between items-center">
           <span class="text-sm font-medium text-gray-600">Capacity</span>
-          <span class="text-lg font-bold text-gray-900">{{ room.capacity }}</span>
+          <span class="text-lg font-bold text-gray-900">{{ room.capacity }} guests</span>
         </div>
         
         <div class="flex justify-between items-center">
@@ -63,26 +63,6 @@
           Book Room
         </button>
       </div>
-
-      <!-- Additional Info Section -->
-      <div class="border-t border-gray-200 pt-4 space-y-3">
-        <div class="flex justify-between items-center">
-          <span class="text-sm font-medium text-gray-600">Price</span>
-          <span class="text-lg font-bold text-gray-900">{{ room.price }} €</span>
-        </div>
-        
-        <div class="flex justify-between items-center">
-          <span class="text-sm font-medium text-gray-600">Capacity</span>
-          <span class="text-lg font-bold text-gray-900">{{ room.capacity }}</span>
-        </div>
-        
-        <div class="flex justify-between items-center">
-          <span class="text-sm font-medium text-gray-600">Status</span>
-          <span class="text-lg font-bold" :class="getStatusTextColor(room.status)">
-            {{ formatStatus(room.status) }}
-          </span>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -100,12 +80,12 @@ interface Room {
 }
 
 // Props
-defineProps<{
+const props = defineProps<{
   room: Room
 }>()
 
 // Emits
-defineEmits<{
+const emit = defineEmits<{
   close: []
   markDirty: [roomId: string]
 }>()
@@ -113,14 +93,15 @@ defineEmits<{
 // Methods
 function getStatusTextColor(status: string): string {
   const colors = {
-    available: 'text-green-400',
-    occupied: 'text-red-400',
-    maintenance: 'text-orange-400',
-    cleaning: 'text-blue-400'
+    available: 'text-green-600',
+    occupied: 'text-red-600', 
+    maintenance: 'text-blue-500',
+    cleaning: 'text-yellow-600'
   }
   return colors[status as keyof typeof colors] || 'text-gray-600'
 }
 
+// Methods
 function formatStatus(status: string): string {
   const statusMap: Record<string, string> = {
     available: 'Available',
