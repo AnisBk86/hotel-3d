@@ -21,12 +21,7 @@
       </button>
       <button 
         @click="zoomOut"
-        class="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 px-3 py-2 rounded-lg shad// Expose methods and data to parent component
-defineExpose({
-  updateRoomStatus,
-  getRoomData: (roomId: string) => hotelRooms.find(room => room.id === roomId),
-  getAllRoomsData: () => hotelRooms
-})g transition-all duration-300 text-xl font-bold"
+        class="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 px-3 py-2 rounded-lg shadow-lg transition-all duration-300 text-xl font-bold"
         title="Zoom Out"
       >
         −
@@ -54,6 +49,7 @@ interface Room {
   price: number
   capacity: number
   amenities: string[]
+  position: { x: number, z: number }
 }
 
 defineProps<{
@@ -96,7 +92,7 @@ const maxZoom = 3
 const zoomStep = 0.2
 
 // Hotel rooms data
-const hotelRooms = [
+const hotelRooms: Room[] = [
   // Première série de chambres (101-110)
   { id: '101', number: '101', status: 'available', type: 'standard', price: 120, capacity: 2, amenities: ['wifi', 'tv'], position: { x: 6, z: -3 } },
   { id: '102', number: '102', status: 'occupied', type: 'deluxe', price: 150, capacity: 2, amenities: ['wifi', 'tv', 'minibar'], position: { x: 6, z: 0 } },
@@ -174,76 +170,23 @@ function updateCameraZoom() {
 
 function getStatusColorHex(status: string): number {
   const colors = {
-    available: 0x4ade80,  // Vert
-    occupied: 0xef4444,   // Rouge
-    maintenance: 0x60a5fa, // Bleu clair
-    cleaning: 0xfbbf24    // Jaune beurre
+    available: 0x72b043,  // Vert naturel pour disponible (#72b043)
+    occupied: 0xff6361,   // Rouge corail pour occupé
+    maintenance: 0xa2d2ff, // Bleu clair pour maintenance
+    cleaning: 0xf8cc1b    // Jaune doré pour nettoyage (#f8cc1b)
   }
   return colors[status as keyof typeof colors] || 0x6b7280
 }
 
 function createHotelFloor() {
-  // Sol commun en carrelage blanc cassé couvrant toute la zone
+  // Sol commun uniforme avec couleur #f5f0f4 (rose beige très clair)
   const floorGeom = new THREE.PlaneGeometry(24, 24) // Taille étendue pour couvrir de x=-12 à x=12 et z=-12 à z=12
   
-  // Création d'une texture de carrelage
-  const canvas = document.createElement('canvas')
-  canvas.width = 512
-  canvas.height = 512
-  const context = canvas.getContext('2d')!
-  
-  // Couleur de base blanc cassé
-  const baseColor = '#f8f6f0'
-  const groutColor = '#e8e6e0'
-  
-  // Remplir le fond
-  context.fillStyle = baseColor
-  context.fillRect(0, 0, 512, 512)
-  
-  // Dessiner les joints de carrelage
-  const tileSize = 64 // Taille d'un carreau en pixels
-  context.strokeStyle = groutColor
-  context.lineWidth = 2
-  
-  // Lignes verticales
-  for (let x = 0; x <= 512; x += tileSize) {
-    context.beginPath()
-    context.moveTo(x, 0)
-    context.lineTo(x, 512)
-    context.stroke()
-  }
-  
-  // Lignes horizontales
-  for (let y = 0; y <= 512; y += tileSize) {
-    context.beginPath()
-    context.moveTo(0, y)
-    context.lineTo(512, y)
-    context.stroke()
-  }
-  
-  // Ajouter des variations subtiles dans les carreaux
-  for (let x = 0; x < 8; x++) {
-    for (let y = 0; y < 8; y++) {
-      // Variation aléatoire très subtile de la couleur
-      const variation = Math.random() * 0.02 - 0.01
-      const tileX = x * tileSize + 1
-      const tileY = y * tileSize + 1
-      const tileW = tileSize - 2
-      const tileH = tileSize - 2
-      
-      context.fillStyle = `hsl(60, 5%, ${92 + variation * 100}%)`
-      context.fillRect(tileX, tileY, tileW, tileH)
-    }
-  }
-  
-  const floorTexture = new THREE.CanvasTexture(canvas)
-  floorTexture.wrapS = THREE.RepeatWrapping
-  floorTexture.wrapT = THREE.RepeatWrapping
-  floorTexture.repeat.set(4, 4) // Répéter la texture pour couvrir la zone
-  
+  // Matériau simple avec couleur uniforme - pas de texture pour éviter les variations
   const floorMat = new THREE.MeshLambertMaterial({ 
-    map: floorTexture,
-    color: 0xffffff
+    color: 0xf5f0f4,  // Rose beige très clair uniforme
+    transparent: true,
+    opacity: 0.5  // 50% d'opacité
   })
   
   const floor = new THREE.Mesh(floorGeom, floorMat)
@@ -251,16 +194,24 @@ function createHotelFloor() {
   floor.position.set(0, -0.01, 0) // Légèrement en dessous des autres éléments
   scene.add(floor)
 
-  // Central courtyard/lobby
+  // Central courtyard/lobby avec la même couleur uniforme que le sol
   const courtyardGeom = new THREE.PlaneGeometry(8, 8)
-  const courtyardMat = new THREE.MeshLambertMaterial({ color: 0xf0f0f0 })
+  const courtyardMat = new THREE.MeshLambertMaterial({ 
+    color: 0xf5f0f4, // Rose beige très clair uniforme
+    transparent: true,
+    opacity: 0.5  // 50% d'opacité
+  })
   const courtyard = new THREE.Mesh(courtyardGeom, courtyardMat)
   courtyard.rotation.x = -Math.PI / 2
   courtyard.position.y = 0
   scene.add(courtyard)
 
-  // Corridors
-  const corridorMat = new THREE.MeshLambertMaterial({ color: 0xe5e5e5 })
+  // Corridors - même couleur que le sol principal
+  const corridorMat = new THREE.MeshLambertMaterial({ 
+    color: 0xf5f0f4,
+    transparent: true,
+    opacity: 0.5  // 50% d'opacité
+  })
   
   // Horizontal corridors
   const hCorridorGeom = new THREE.PlaneGeometry(14, 2)
@@ -402,19 +353,38 @@ function createRoom(roomData: any) {
   roomGroup.add(rightWall)
 
   // Add room furniture to make more area clickable
-  const furnitureMat = new THREE.MeshLambertMaterial({ color: 0x8b4513 })
+  const furnitureMat = new THREE.MeshLambertMaterial({ color: 0xd4a574 }) // Bois clair moderne
   
-  // Bed
-  const bedGeom = new THREE.BoxGeometry(1.5, 0.3, 1)
-  const bed = new THREE.Mesh(bedGeom, furnitureMat)
-  bed.position.set(0, 0.35, -0.5)
-  bed.userData = { roomId: roomData.id, roomData }
-  bed.name = `room-bed-${roomData.id}`
-  roomGroup.add(bed)
+  // Bed frame (base du lit)
+  const bedFrameGeom = new THREE.BoxGeometry(1.6, 0.15, 1.1)
+  const bedFrame = new THREE.Mesh(bedFrameGeom, furnitureMat)
+  bedFrame.position.set(0, 0.25, -0.5)
+  bedFrame.userData = { roomId: roomData.id, roomData }
+  bedFrame.name = `room-bed-frame-${roomData.id}`
+  roomGroup.add(bedFrame)
+  
+  // Mattress (matelas)
+  const mattressMat = new THREE.MeshLambertMaterial({ color: 0xf8f6f0 }) // Blanc cassé pour le matelas
+  const mattressGeom = new THREE.BoxGeometry(1.5, 0.2, 1)
+  const mattress = new THREE.Mesh(mattressGeom, mattressMat)
+  mattress.position.set(0, 0.4, -0.5)
+  mattress.userData = { roomId: roomData.id, roomData }
+  mattress.name = `room-mattress-${roomData.id}`
+  roomGroup.add(mattress)
+  
+  // Headboard (tête de lit)
+  const headboardMat = new THREE.MeshLambertMaterial({ color: 0xb8956b }) // Bois plus foncé pour la tête de lit
+  const headboardGeom = new THREE.BoxGeometry(1.6, 0.8, 0.1)
+  const headboard = new THREE.Mesh(headboardGeom, headboardMat)
+  headboard.position.set(0, 0.65, -1.05)
+  headboard.userData = { roomId: roomData.id, roomData }
+  headboard.name = `room-headboard-${roomData.id}`
+  roomGroup.add(headboard)
 
-  // Nightstand
+  // Nightstand (table de nuit moderne)
+  const nightstandMat = new THREE.MeshLambertMaterial({ color: 0xd4a574 }) // Même couleur que le lit pour l'harmonie
   const nightstandGeom = new THREE.BoxGeometry(0.4, 0.4, 0.4)
-  const nightstand = new THREE.Mesh(nightstandGeom, furnitureMat)
+  const nightstand = new THREE.Mesh(nightstandGeom, nightstandMat)
   nightstand.position.set(1, 0.4, -0.5)
   nightstand.userData = { roomId: roomData.id, roomData }
   nightstand.name = `room-nightstand-${roomData.id}`
@@ -524,13 +494,13 @@ function createRoomLabel(roomData: any) {
   const statusText = getStatusText(roomData.status)
   
   // Ombre du texte du statut
-  context.fillStyle = 'rgba(255, 255, 255, 0.3)'
-  context.font = 'bold 24px Orbitron, Arial, sans-serif'
+  context.fillStyle = 'rgba(255, 255, 255, 0.4)'
+  context.font = 'bold 28px Orbitron, Arial, sans-serif'
   context.fillText(statusText, centerX + 1, centerY + 25 + 1)  // Décalé vers le bas
   
-  // Texte du statut principal avec couleur unifiée (noir pour plus de clarté)
-  context.fillStyle = '#000000'
-  context.font = 'bold 24px Orbitron, Arial, sans-serif'
+  // Texte du statut principal avec couleur plus foncée pour plus de clarté
+  context.fillStyle = '#1a1a1a'
+  context.font = 'bold 28px Orbitron, Arial, sans-serif'
   context.fillText(statusText, centerX, centerY + 25)  // Décalé vers le bas
   
   const texture = new THREE.CanvasTexture(canvas)
@@ -606,22 +576,14 @@ function handleClick(event: MouseEvent) {
         if (current.userData && current.userData.roomId) {
           const roomId = current.userData.roomId
           
-          // Créer les données de la chambre
-          const roomNumber = roomId.replace('room-', '')
-          const roomTypes = ['standard', 'deluxe', 'suite'] as const
-          const roomData = {
-            id: roomId,
-            number: roomNumber,
-            status: 'available' as const,
-            type: roomTypes[Math.floor(Math.random() * 3)],
-            price: 100 + parseInt(roomNumber) * 10,
-            capacity: 2,
-            amenities: ['wifi', 'tv', 'minibar', 'climatisation', 'room service']
-          }
+          // Utiliser les vraies données de la chambre depuis hotelRooms
+          const realRoomData = hotelRooms.find(room => room.id === roomId)
           
-          emit('selectRoom', roomData)
-          roomFound = true
-          break
+          if (realRoomData) {
+            emit('selectRoom', realRoomData)
+            roomFound = true
+            break
+          }
         }
         if (current.parent) {
           current = current.parent
@@ -836,13 +798,13 @@ function getStatusText(status: string): string {
 function getStatusColor(status: string): string {
   switch (status) {
     case 'available':
-      return '#16a34a'  // Vert
+      return '#72b043'  // Vert naturel - UNIFIÉ avec getStatusColorHex
     case 'occupied':
-      return '#dc2626'  // Rouge
+      return '#ff6361'  // Rouge corail - UNIFIÉ avec getStatusColorHex
     case 'maintenance':
-      return '#60a5fa'  // Bleu clair
+      return '#a2d2ff'  // Bleu clair - UNIFIÉ avec getStatusColorHex
     case 'cleaning':
-      return '#fbbf24'  // Jaune beurre
+      return '#f8cc1b'  // Jaune doré - UNIFIÉ avec getStatusColorHex
     default:
       return '#6b7280'  // Gris
   }
@@ -850,20 +812,30 @@ function getStatusColor(status: string): string {
 
 // Public method to update room status
 function updateRoomStatus(roomId: string, newStatus: string) {
+  console.log('HotelFloorPlan.updateRoomStatus called:', roomId, newStatus) // Debug log
+  
   // Find the room in hotelRooms data and update it
   const roomIndex = hotelRooms.findIndex(room => room.id === roomId)
+  console.log('Found room at index:', roomIndex) // Debug log
+  
   if (roomIndex !== -1) {
+    const oldStatus = hotelRooms[roomIndex].status
     hotelRooms[roomIndex].status = newStatus as any
+    console.log('Updated room status from', oldStatus, 'to', newStatus) // Debug log
     
     // Update the 3D room visual
     const roomGroup = roomMeshes.get(roomId)
+    console.log('Found room group:', roomGroup ? 'Yes' : 'No') // Debug log
+    
     if (roomGroup) {
       const newColor = getStatusColorHex(newStatus)
+      console.log('New color hex:', newColor.toString(16)) // Debug log
       
       // Update room floor color
       const roomFloor = roomGroup.getObjectByName(`room-floor-${roomId}`) as THREE.Mesh
       if (roomFloor && roomFloor.material instanceof THREE.MeshLambertMaterial) {
         roomFloor.material.color.setHex(newColor)
+        console.log('Updated floor color') // Debug log
       }
       
       // Update wall colors
@@ -874,9 +846,11 @@ function updateRoomStatus(roomId: string, newStatus: string) {
           wall.material.color.setHex(newColor)
         }
       })
+      console.log('Updated wall colors') // Debug log
       
       // Update room label with new status and color
       updateRoomLabel(roomId, hotelRooms[roomIndex])
+      console.log('Updated room label') // Debug log
       
       // Update userData for the room group and all its children
       roomGroup.userData.roomData = hotelRooms[roomIndex]
@@ -885,7 +859,10 @@ function updateRoomStatus(roomId: string, newStatus: string) {
           child.userData.roomData = hotelRooms[roomIndex]
         }
       })
+      console.log('Updated userData') // Debug log
     }
+  } else {
+    console.error('Room not found with ID:', roomId) // Debug log
   }
 }
 
@@ -895,6 +872,7 @@ function updateRoomLabel(roomId: string, roomData: any) {
   if (existingLabel) {
     scene.remove(existingLabel)
     roomLabels.delete(roomId)
+    labelAnimations.delete(roomId) // Supprimer aussi l'animation
   }
   
   // Create new label with updated status
@@ -903,7 +881,9 @@ function updateRoomLabel(roomId: string, roomData: any) {
 
 // Expose methods for parent component
 defineExpose({
-  updateRoomStatus
+  updateRoomStatus,
+  getRoomData: (roomId: string) => hotelRooms.find(room => room.id === roomId),
+  getAllRoomsData: () => hotelRooms
 })
 
 // Lifecycle

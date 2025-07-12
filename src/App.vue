@@ -72,6 +72,7 @@
       <!-- 3D Floor View -->
       <div class="w-full bg-gray-100 relative overflow-hidden">
         <HotelFloorPlan 
+          ref="floorPlanRef"
           :selectedRoom="selectedRoom"
           @selectRoom="handleRoomSelection"
           class="w-full h-full"
@@ -109,6 +110,7 @@
             :room="selectedRoom"
             @close="selectedRoom = null"
             @markDirty="markRoomDirty"
+            @updateStatus="updateRoomStatus"
           />
         </div>
       </Transition>
@@ -122,6 +124,9 @@ import { ref, computed } from 'vue'
 import HotelFloorPlan from './components/HotelFloorPlan.vue'
 import RoomDetails from './components/RoomDetails.vue'
 
+// Référence au composant HotelFloorPlan
+const floorPlanRef = ref()
+
 // Types
 interface Room {
   id: string
@@ -131,7 +136,7 @@ interface Room {
   price: number
   capacity: number
   amenities: string[]
-  position?: { x: number, z: number } // Optional position for 3D rooms
+  position: { x: number, z: number } // Position for 3D rooms
 }
 
 // State
@@ -139,23 +144,13 @@ const selectedRoom = ref<Room | null>(null)
 const activeSection = ref('dashboard')
 const showAddRoom = ref(false)
 
-// Sample rooms data for quick selection
-const allRooms = ref<Room[]>([
-  { id: '10', number: '10', status: 'available', type: 'standard', price: 120, capacity: 2, amenities: ['wifi', 'tv'] },
-  { id: '11', number: '11', status: 'occupied', type: 'deluxe', price: 150, capacity: 2, amenities: ['wifi', 'tv', 'minibar'] },
-  { id: '12', number: '12', status: 'available', type: 'suite', price: 200, capacity: 4, amenities: ['wifi', 'tv', 'minibar', 'balcony'] },
-  { id: '13', number: '13', status: 'occupied', type: 'standard', price: 120, capacity: 2, amenities: ['wifi', 'tv'] },
-  { id: '14', number: '14', status: 'maintenance', type: 'deluxe', price: 150, capacity: 2, amenities: ['wifi', 'tv', 'minibar'] },
-  { id: '15', number: '15', status: 'cleaning', type: 'suite', price: 200, capacity: 4, amenities: ['wifi', 'tv', 'minibar', 'balcony'] },
-  { id: '16', number: '16', status: 'occupied', type: 'standard', price: 120, capacity: 2, amenities: ['wifi', 'tv'] },
-  { id: '17', number: '17', status: 'occupied', type: 'deluxe', price: 150, capacity: 2, amenities: ['wifi', 'tv', 'minibar'] },
-  { id: '18', number: '18', status: 'occupied', type: 'suite', price: 200, capacity: 4, amenities: ['wifi', 'tv', 'minibar', 'balcony'] },
-  { id: '19', number: '19', status: 'cleaning', type: 'standard', price: 120, capacity: 2, amenities: ['wifi', 'tv'] },
-])
-
 // Computed
 const quickSelectRooms = computed(() => {
-  return allRooms.value.slice(0, 3) // Show first 3 rooms as quick select
+  // Get rooms from HotelFloorPlan component if available
+  if (floorPlanRef.value && floorPlanRef.value.getAllRoomsData) {
+    return floorPlanRef.value.getAllRoomsData().slice(0, 3)
+  }
+  return []
 })
 
 // Methods
@@ -175,7 +170,8 @@ function testRoomSelection() {
     type: 'deluxe',
     price: 150,
     capacity: 2,
-    amenities: ['wifi', 'tv', 'minibar', 'balcony']
+    amenities: ['wifi', 'tv', 'minibar', 'balcony'],
+    position: { x: 0, z: 0 }
   }
   selectedRoom.value = testRoom
 }
@@ -191,13 +187,40 @@ function getRoomButtonColor(status: string): string {
 }
 
 function markRoomDirty(roomId: string) {
-  const room = allRooms.value.find(r => r.id === roomId)
-  if (room) {
-    room.status = 'cleaning'
+  // Update the 3D scene directly through the component reference
+  if (floorPlanRef.value && floorPlanRef.value.updateRoomStatus) {
+    floorPlanRef.value.updateRoomStatus(roomId, 'cleaning')
+  }
+  // Update selectedRoom if it's the same room
+  if (selectedRoom.value?.id === roomId) {
+    if (floorPlanRef.value && floorPlanRef.value.getRoomData) {
+      const updatedRoom = floorPlanRef.value.getRoomData(roomId)
+      if (updatedRoom) {
+        selectedRoom.value = { ...updatedRoom }
+      }
+    }
+  }
+}
+
+function updateRoomStatus(roomId: string, newStatus: string) {
+  console.log('Updating room status:', roomId, 'to', newStatus) // Debug log
+  
+  // Update the 3D scene directly through the component reference
+  if (floorPlanRef.value && floorPlanRef.value.updateRoomStatus) {
+    floorPlanRef.value.updateRoomStatus(roomId, newStatus)
+    
     // Update selectedRoom if it's the same room
     if (selectedRoom.value?.id === roomId) {
-      selectedRoom.value = { ...room }
+      // Get the updated room data from HotelFloorPlan
+      if (floorPlanRef.value.getRoomData) {
+        const updatedRoom = floorPlanRef.value.getRoomData(roomId)
+        if (updatedRoom) {
+          selectedRoom.value = { ...updatedRoom }
+        }
+      }
     }
+  } else {
+    console.error('FloorPlan reference not available or updateRoomStatus method missing')
   }
 }
 </script>

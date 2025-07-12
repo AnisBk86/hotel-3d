@@ -41,9 +41,32 @@
         
         <div class="flex justify-between items-center">
           <span class="text-sm font-medium text-gray-600">Status</span>
-          <span class="text-lg font-bold" :class="getStatusTextColor(room.status)">
-            {{ formatStatus(room.status) }}
-          </span>
+          <div class="relative">
+            <select 
+              v-model="selectedStatus"
+              @change="updateRoomStatus"
+              class="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-2 pr-8 text-sm font-medium cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              :class="getStatusBorderColor(selectedStatus)"
+            >
+              <option 
+                v-for="status in statusOptions" 
+                :key="status.value" 
+                :value="status.value"
+                class="py-2"
+              >
+                {{ status.label }}
+              </option>
+            </select>
+            <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+              <div 
+                class="w-3 h-3 rounded-full mr-1" 
+                :style="{ backgroundColor: getStatusColorCSS(selectedStatus) }"
+              ></div>
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -68,6 +91,8 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from 'vue'
+
 interface Room {
   id: string
   number: string
@@ -80,7 +105,7 @@ interface Room {
 }
 
 // Props
-const props = defineProps<{
+const { room } = defineProps<{
   room: Room
 }>()
 
@@ -88,28 +113,49 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   markDirty: [roomId: string]
+  updateStatus: [roomId: string, newStatus: string]
 }>()
 
-// Methods
-function getStatusTextColor(status: string): string {
-  const colors = {
-    available: 'text-green-600',
-    occupied: 'text-red-600', 
-    maintenance: 'text-blue-500',
-    cleaning: 'text-yellow-600'
-  }
-  return colors[status as keyof typeof colors] || 'text-gray-600'
-}
+// Reactive state
+const selectedStatus = ref(room.status)
+
+// Status options with labels
+const statusOptions = [
+  { value: 'available', label: 'Available' },
+  { value: 'occupied', label: 'Occupied' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'cleaning', label: 'Cleaning' }
+]
+
+// Watch for room status changes to update selected status
+watch(() => room.status, (newStatus) => {
+  selectedStatus.value = newStatus
+})
 
 // Methods
-function formatStatus(status: string): string {
-  const statusMap: Record<string, string> = {
-    available: 'Available',
-    occupied: 'Occupied',
-    maintenance: 'Maintenance',
-    cleaning: 'Cleaning'
+function updateRoomStatus() {
+  emit('updateStatus', room.id, selectedStatus.value)
+}
+
+function getStatusColorCSS(status: string): string {
+  // Utilise les mêmes couleurs que Three.js (converties en CSS)
+  const colors = {
+    available: '#72b043',  // Vert naturel
+    occupied: '#ff6361',   // Rouge corail
+    maintenance: '#a2d2ff', // Bleu clair
+    cleaning: '#f8cc1b'    // Jaune doré
   }
-  return statusMap[status] || status
+  return colors[status as keyof typeof colors] || '#6b7280'
+}
+
+function getStatusBorderColor(status: string): string {
+  const borderColors = {
+    available: 'border-green-400',
+    occupied: 'border-red-400',
+    maintenance: 'border-blue-400',
+    cleaning: 'border-yellow-400'
+  }
+  return borderColors[status as keyof typeof borderColors] || 'border-gray-300'
 }
 
 function handleImageError(event: Event) {
@@ -140,5 +186,22 @@ function handleImageError(event: Event) {
 .overflow-y-auto::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 2px;
+}
+
+/* Style personnalisé pour le select dropdown */
+select {
+  background-image: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+select:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Animation pour les transitions de couleur */
+select, .w-3.h-3.rounded-full {
+  transition: all 0.2s ease-in-out;
 }
 </style>
